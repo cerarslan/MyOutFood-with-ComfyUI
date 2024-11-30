@@ -1,0 +1,23 @@
+:root {
+  --text-primary: theme('colors.black');
+  --text-secondary: theme('colors.black/80');
+  --text-muted: theme('colors.black/60');
+}
+
+[data-theme="dark"] {
+  --text-primary: theme('colors.white');
+  --text-secondary: theme('colors.white/80');
+  --text-muted: theme('colors.white/60');
+}
+
+.text-theme-primary {
+  color: var(--text-primary);
+}
+
+.text-theme-secondary {
+  color: var(--text-secondary);
+}
+
+.text-theme-muted {
+  color: var(--text-muted);
+}

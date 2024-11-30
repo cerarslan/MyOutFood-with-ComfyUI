@@ -1,0 +1,376 @@
+const API_URL = 'http://127.0.0.1:8188';
+
+interface FoodSuggestion {
+  suggestion: string;
+  generatedImage: string;
+}
+
+// Rastgele bir seed değeri üreten fonksiyon
+function generateRandomSeed(): number {
+  return Math.floor(Math.random() * 1000000000000000);
+}
+
+export async function generateFoodSuggestions(imageFile: File): Promise<FoodSuggestion[]> {
+  return new Promise(async (resolve, reject) => {
+    try {
+      console.log('Attempting to generate food suggestions...');
+      console.log('API URL:', API_URL);
+
+      // Upload the image file
+      const formData = new FormData();
+      formData.append('image', imageFile);
+
+      const uploadResponse = await fetch(`${API_URL}/upload/image`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!uploadResponse.ok) {
+        throw new Error(`Image upload failed: ${uploadResponse.status} ${uploadResponse.statusText}`);
+      }
+
+      const uploadResult = await uploadResponse.json();
+      const uploadedFilename = uploadResult.name;
+
+      // Rastgele seed değeri oluştur
+      const seed = generateRandomSeed();
+
+      const workflow = {
+        "1": {
+          "inputs": {
+            "text": [
+              "9",
+              0
+            ],
+            "clip": [
+              "20",
+              1
+            ]
+          },
+          "class_type": "CLIPTextEncode",
+          "_meta": {
+            "title": "CLIP Text Encode (Positive Prompt)"
+          }
+        },
+        "2": {
+          "inputs": {
+            "samples": [
+              "4",
+              0
+            ],
+            "vae": [
+              "6",
+              0
+            ]
+          },
+          "class_type": "VAEDecode",
+          "_meta": {
+            "title": "VAE Decode"
+          }
+        },
+        "3": {
+          "inputs": {
+            "width": 1280,
+            "height": 768,
+            "batch_size": 1
+          },
+          "class_type": "EmptySD3LatentImage",
+          "_meta": {
+            "title": "EmptySD3LatentImage"
+          }
+        },
+        "4": {
+          "inputs": {
+            "seed": seed,
+            "steps": 8,
+            "cfg": 1,
+            "sampler_name": "euler",
+            "scheduler": "beta",
+            "denoise": 1,
+            "model": [
+              "20",
+              0
+            ],
+            "positive": [
+              "1",
+              0
+            ],
+            "negative": [
+              "5",
+              0
+            ],
+            "latent_image": [
+              "3",
+              0
+            ]
+          },
+          "class_type": "KSampler",
+          "_meta": {
+            "title": "KSampler"
+          }
+        },
+        "5": {
+          "inputs": {
+            "text": "",
+            "clip": [
+              "20",
+              1
+            ]
+          },
+          "class_type": "CLIPTextEncode",
+          "_meta": {
+            "title": "CLIP Text Encode (Negative Prompt)"
+          }
+        },
+        "6": {
+          "inputs": {
+            "vae_name": "ae.safetensors"
+          },
+          "class_type": "VAELoader",
+          "_meta": {
+            "title": "Load VAE"
+          }
+        },
+        "7": {
+          "inputs": {
+            "text_input": "",
+            "task": "detailed_caption",
+            "fill_mask": true,
+            "keep_model_loaded": false,
+            "max_new_tokens": 1024,
+            "num_beams": 3,
+            "do_sample": true,
+            "output_mask_select": "",
+            "seed": seed,
+            "image": [
+              "17",
+              0
+            ],
+            "florence2_model": [
+              "8",
+              0
+            ]
+          },
+          "class_type": "Florence2Run",
+          "_meta": {
+            "title": "Florence2Run"
+          }
+        },
+        "8": {
+          "inputs": {
+            "model": "gokaygokay/Florence-2-Flux-Large",
+            "precision": "fp16",
+            "attention": "sdpa"
+          },
+          "class_type": "DownloadAndLoadFlorence2Model",
+          "_meta": {
+            "title": "DownloadAndLoadFlorence2Model"
+          }
+        },
+        "9": {
+          "inputs": {
+            "text": [
+              "7",
+              2
+            ],
+            "random_seed": 0,
+            "model": "Mistral-7B-Instruct-v0.3.Q4_K_M.gguf",
+            "max_tokens": 4096,
+            "apply_instructions": true,
+            "instructions": "You are a food photographer. Please create a detailed meal or menu suggestion for the given outfit read in the text. Please take into account the outfit characteristics (color, etc.). Only consider the outfit, other details are not important. Please keep it simple (please don't involve people/person in your prompt)."
+          },
+          "class_type": "Searge_LLM_Node",
+          "_meta": {
+            "title": "Searge LLM Node"
+          }
+        },
+        "11": {
+          "inputs": {
+            "images": [
+              "2",
+              0
+            ]
+          },
+          "class_type": "PreviewImage",
+          "_meta": {
+            "title": "Preview Image"
+          }
+        },
+        "13": {
+          "inputs": {
+            "images": [
+              "2",
+              0
+            ]
+          },
+          "class_type": "SaveImageWebsocket",
+          "_meta": {
+            "title": "SaveImageWebsocket"
+          }
+        },
+        "15": {
+          "inputs": {
+            "image": [
+              "2",
+              0
+            ]
+          },
+          "class_type": "easy imageToBase64",
+          "_meta": {
+            "title": "Image To Base64"
+          }
+        },
+        "17": {
+          "inputs": {
+            "image": uploadedFilename,
+            "upload": "image"
+          },
+          "class_type": "LoadImage",
+          "_meta": {
+            "title": "Load Image"
+          }
+        },
+        "18": {
+          "inputs": {
+            "clip_name1": "ViT-L-14-TEXT-detail-improved-hiT-GmP-TE-only-HF.safetensors",
+            "clip_name2": "t5xxl_fp16.safetensors",
+            "type": "flux"
+          },
+          "class_type": "DualCLIPLoader",
+          "_meta": {
+            "title": "DualCLIPLoader"
+          }
+        },
+        "19": {
+          "inputs": {
+            "unet_name": "pixelwave_flux1Dev03.safetensors",
+            "weight_dtype": "fp8_e5m2"
+          },
+          "class_type": "UNETLoader",
+          "_meta": {
+            "title": "Load Diffusion Model"
+          }
+        },
+        "20": {
+          "inputs": {
+            "PowerLoraLoaderHeaderWidget": {
+              "type": "PowerLoraLoaderHeaderWidget"
+            },
+            "lora_1": {
+              "on": true,
+              "lora": "Flux\\FLUX.1-Turbo-Alpha .safetensors",
+              "strength": 1
+            },
+            "lora_2": {
+              "on": true,
+              "lora": "Flux\\AntiBlur.safetensors",
+              "strength": 0.9
+            },
+            "➕ Add Lora": "",
+            "model": [
+              "19",
+              0
+            ],
+            "clip": [
+              "18",
+              0
+            ]
+          },
+          "class_type": "Power Lora Loader (rgthree)",
+          "_meta": {
+            "title": "Power Lora Loader (rgthree)"
+          }
+        },
+        "21": {
+          "inputs": {
+            "text": [
+              "9",
+              0
+            ]
+          },
+          "class_type": "ShowText|pysssss",
+          "_meta": {
+            "title": "Show Text 🐍"
+          }
+        },
+        "22": {
+          "inputs": {
+            "text": [
+              "15",
+              0
+            ]
+          },
+          "class_type": "ShowText|pysssss",
+          "_meta": {
+            "title": "Show Text 🐍"
+          }
+        }
+      };
+
+      console.log('Sending request to ComfyUI API...');
+      const response = await fetch(`${API_URL}/prompt`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          prompt: workflow,
+          client_id: "MyOutFood-API",
+        }),
+      });
+
+      console.log('Response status:', response.status);
+      console.log('Response status text:', response.statusText);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Error response body:', errorText);
+        throw new Error(`ComfyUI API isteği başarısız oldu: ${response.status} ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      console.log('Received data from API:', data);
+
+      // Poll for results
+      const checkResults = async () => {
+        const historyResponse = await fetch(`${API_URL}/history/${data.prompt_id}`);
+        const historyData = await historyResponse.json();
+        if (historyData[data.prompt_id] && historyData[data.prompt_id].outputs) {
+          const result = historyData[data.prompt_id];
+          const suggestions: FoodSuggestion[] = [];
+          if (result.outputs["21"] && result.outputs["22"]) {
+            const suggestion = result.outputs["21"].text;
+            const generatedImage = result.outputs["22"].text;
+            suggestions.push({ suggestion, generatedImage });
+          }
+          resolve(suggestions);
+        } else {
+          setTimeout(checkResults, 1000); // Check again after 1 second
+        }
+      };
+
+      checkResults();
+    } catch (error) {
+      console.error('Yemek önerileri oluşturulurken hata:', error);
+      reject(error);
+    }
+  });
+}
+
+export async function checkComfyUIStatus(): Promise<boolean> {
+  try {
+    console.log('Checking ComfyUI status...');
+    const response = await fetch(`${API_URL}/system_stats`, { 
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json',
+      },
+    });
+
+    console.log('ComfyUI status check response:', response.status, response.statusText);
+    return response.ok;
+  } catch (error) {
+    console.error('ComfyUI durumu kontrol edilirken hata oluştu:', error);
+    return false;
+  }
+}
