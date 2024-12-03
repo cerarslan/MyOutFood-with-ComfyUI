@@ -1,8 +1,16 @@
 # MyOutFood
 
-A Next.js application for discovering and exploring food options.
+A Next.js demo application for discovering and exploring food options.
 
 ## YOU NEED TO CHANGE FILE NAME like .env.local to USE on YOUR LOCAL
+
+
+## Installation 
+git clone https://github.com/cerarslan/MyOutFood-with-ComfyUI.git
+
+npm install
+
+npm run dev
 
 ## Features
 
